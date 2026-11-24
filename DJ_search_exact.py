@@ -147,6 +147,8 @@ def dj_search(data_path, output_file, min_ngram, subset=100, lm_tokenizer=False)
     else:
         tokenize_func = lambda x: tokenizer.tokenize(x)
         detokenize = lambda x: tokenizer.decode(tokenizer.convert_tokens_to_ids(x))
+    # drop too-short docs up front so that resuming by len(outputs) lines up with data
+    data = [d for d in data if len(tokenize_func(unidecode(d['text']))) > min_ngram]
 
     outputs = []
     if os.path.isfile(output_file):
@@ -157,8 +159,6 @@ def dj_search(data_path, output_file, min_ngram, subset=100, lm_tokenizer=False)
     for t_idx, t_doc in tqdm(enumerate(data), desc='target docs', total=len(data)):
         tokenized_text = tokenize_func(unidecode(t_doc['text']))
         tgt_doc = Document(f'tgt_{t_idx}', tokenized_text)
-        if len(tgt_doc.tokens) <= min_ngram:
-            continue
 
         output = find_exact_match(detokenize, tgt_doc, min_ngram)
         t_doc.update(output)

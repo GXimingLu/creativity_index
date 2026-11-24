@@ -246,6 +246,8 @@ def find_soft_match(doc: Document, reference_docs: List[RefDocument], min_ngram:
 def dj_search_earth_mover(data_path, embed_table_path, output_file, min_ngram, min_content_word, threshold,
                           n_docs, subset=100):
     data = [json.loads(l) for l in open(data_path, 'r').readlines()][:subset]
+    # drop too-short docs up front so that resuming by len(outputs) lines up with data
+    data = [d for d in data if len(tokenize(d['text'])) > min_ngram]
     with open(embed_table_path, 'rb') as f:
         sim_table = pickle.load(f)
     print('embedding distance table loaded')
@@ -258,8 +260,6 @@ def dj_search_earth_mover(data_path, embed_table_path, output_file, min_ngram, m
 
     for t_idx, t_doc in tqdm(enumerate(data), desc='target docs', total=len(data)):
         tgt_doc = Document(f'tgt_{t_idx}', tokenize(t_doc['text']))
-        if len(tgt_doc.tokens) <= min_ngram:
-            continue
 
         retrieved_docs = []
         sorted_ratios = sorted([d['hit_ratio'] for k, v in t_doc['retrieved_docs'].items() for d in v], reverse=True)
